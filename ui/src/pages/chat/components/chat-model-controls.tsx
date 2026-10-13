@@ -8,6 +8,7 @@ import type {
 } from "../../../api/types.ts";
 import { registerModelControlsEnglish } from "../../../i18n/locales/en-model-controls.ts";
 import {
+  buildQualifiedChatModelValue,
   normalizeChatModelProviderId,
   resolvePreferredServerChatModelValue,
 } from "../../../lib/chat/model-ref.ts";
@@ -312,9 +313,12 @@ function createChatModelControls(props: ChatModelControlsProps): Accessor<{
       : resolvedFastMode;
     const runtimeSelectionLocked = activeSession?.runtimeSelectionLocked === true;
     const currentProviderHint = activeSession?.modelProvider ?? "";
-    // This control owns the saved preference, not the model observed on a run.
-    // A running turn can report its old model (or fallback) after a new choice is saved.
-    const triggerModelValue = currentOverride;
+    // The picker keeps the saved selection, but its closed label shows the model
+    // the Gateway observed executing (including a fallback) when one is known.
+    const observedModelValue = activeSession?.activeModel
+      ? buildQualifiedChatModelValue(activeSession.activeModel, activeSession.activeModelProvider)
+      : "";
+    const triggerModelValue = observedModelValue || currentOverride;
     const defaultProviderHint = props.sessionsResult?.defaults?.modelProvider ?? "";
     const defaultCatalogEntry = catalog.entry(defaultModel);
     const canonicalDefaultLabel = resolveChatModelPickerLabel(defaultCatalogEntry, defaultLabel);
@@ -502,8 +506,9 @@ function createChatModelControls(props: ChatModelControlsProps): Accessor<{
     ) {
       activeModelOption.contextTokens = activeSession.contextTokens;
     }
-    // The preference label uses its selected runtime, not an executing fallback.
-    const triggerRuntime = selectedAgentRuntime ?? defaultRuntime;
+    const triggerRuntime = observedModelValue
+      ? catalog.entry(observedModelValue)?.agentRuntime?.id
+      : (selectedAgentRuntime ?? defaultRuntime);
     // A lock prevents model changes; the concrete selection still owns its label.
     // Without a selection, neither the runtime nor the agent default identifies it.
     const committedModelLabel =

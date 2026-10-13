@@ -552,7 +552,7 @@ describe("chat pane composer controls", () => {
 });
 
 describe("chat pane model controls", () => {
-  it("keeps the preference visible while admitted events update execution metadata", async () => {
+  it("shows admitted execution model while keeping the saved preference selected", async () => {
     const row: GatewaySessionRow = {
       key: "agent:main:current",
       kind: "direct",
@@ -635,10 +635,10 @@ describe("chat pane model controls", () => {
       sessionKey: state.sessionKey,
       agentId: "main",
     });
-    expect(draw()).toContain("Primary");
+    expect(draw()).toContain("Fallback");
     adoptStartedChatRun(state, "current-run", 2);
     state.chatSending = false;
-    expect(draw()).toContain("Primary");
+    expect(draw()).toContain("Fallback");
     const observe = (
       runId: string,
       model: string | null,
@@ -657,7 +657,7 @@ describe("chat pane model controls", () => {
         },
       });
     const expectFallbackExecution = () => {
-      expect(draw()).toContain("Primary");
+      expect(draw()).toContain("Fallback");
       expect(state.sessionsResult?.sessions[0]?.activeModel).toBe("fallback");
     };
     observe("current-run", "primary", 3);
@@ -673,7 +673,7 @@ describe("chat pane model controls", () => {
     observe("current-run", "fallback", 7);
     expectFallbackExecution();
     adoptStartedChatRun(state, "replacement-run", 8);
-    expect(draw()).toContain("Primary");
+    expect(draw()).toContain("Fallback");
     observe("replacement-run", "primary", 9);
     expect(draw()).toContain("Primary");
     state.chatSending = true;
@@ -689,7 +689,7 @@ describe("chat pane model controls", () => {
     observe("next-run", "fallback", 10);
     // A delayed event can carry the latest session projection but an older emitter ID.
     observe("replacement-run", "fallback", 10);
-    expect(draw()).toContain("Primary");
+    expect(draw()).toContain("Fallback");
     adoptStartedChatRun(state, "next-run", 11);
     state.chatSending = false;
     expectFallbackExecution();

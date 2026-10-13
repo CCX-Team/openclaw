@@ -3430,7 +3430,7 @@ describe("chat model controls", () => {
       displayName: "Google",
       status: "static",
       profiles: [{ profileId: "google:key", type: "api_key", status: "static" }],
-      apiKey: { source: "env", envVar: "GEMINI_API_KEY" },
+      apiKey: *** source: "env", envVar: "GEMINI_API_KEY" },
     },
     {
       provider: "google-gemini-cli",
@@ -3657,10 +3657,10 @@ describe("chat model controls", () => {
 
   it.each([
     ["current execution", "Configured model"],
-    ["previous run", "Primary"],
+    ["observed fallback", "Fallback"],
     ["locked unknown", "Session model"],
     ["unknown", "Default model"],
-  ] as const)("keeps the saved preference visible during %s admission", (mode, expected) => {
+  ] as const)("shows the observed model during %s admission", (mode, expected) => {
     const observed = mode === "current execution";
     const unidentified = mode === "locked unknown" || mode === "unknown";
     const sending = unidentified;
@@ -3688,7 +3688,7 @@ describe("chat model controls", () => {
         hasActiveRun: true,
         activeRunIds: runIds,
         activeModel,
-        activeModelProvider: runIds ? "fallback-provider" : "example",
+        activeModelProvider: "example",
       });
     }
     const trigger = getChatModelSelect(
@@ -3715,11 +3715,39 @@ describe("chat model controls", () => {
     if (!runIds) {
       if (!unidentified) {
         expect(trigger.textContent).not.toContain("Model pending");
-        expect(trigger.textContent).not.toContain("Fallback");
+        if (mode !== "observed fallback") {
+          expect(trigger.textContent).not.toContain("Fallback");
+        }
       } else {
         expect(trigger.querySelector(".chat-controls__model-trigger-skeleton")).toBeNull();
       }
     }
+  });
+
+  it("shows a cross-provider fallback without changing the selected Claude model", () => {
+    const { state } = createChatHeaderState({
+      model: "claude-opus-5-5",
+      modelProvider: "anthropic",
+      models: [
+        { id: "claude-opus-5-5", name: "Claude Opus", provider: "anthropic" },
+        { id: "gpt-6-sol", name: "GPT-6 Sol", provider: "openai", supportsTools: false },
+      ],
+    });
+    Object.assign(expectDefined(state.sessionsResult?.sessions[0], "selected session"), {
+      activeModel: "gpt-6-sol",
+      activeModelProvider: "openai",
+    });
+    const container = renderModelControls(state);
+    const trigger = getChatModelSelect(container);
+    expect(trigger.textContent).toContain("GPT-6 Sol");
+    expect(trigger.textContent).not.toContain("Claude Opus");
+    expect(trigger.dataset.chatSelectValue).toBe("anthropic/claude-opus-5-5");
+    expect(trigger.dataset.chatModelTools).toBe("unavailable");
+    expect(
+      container
+        .querySelector('[data-chat-model-option="anthropic/claude-opus-5-5"]')
+        ?.getAttribute("aria-selected"),
+    ).toBe("true");
   });
 
   it.each([false, true])("preserves known selections while the catalog loads (%s)", (known) => {

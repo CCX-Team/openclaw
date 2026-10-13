@@ -99,9 +99,9 @@ function prepareChatModelPicker(params: ChatModelPickerParams) {
       ? activeModelOption
       : triggerModelValue === ""
         ? undefined
-        : params.modelOptions.find((option) =>
+        : (params.modelOptions.find((option) =>
             isModelPickerOptionSelected(option, triggerModelValue, params.selectedAgentRuntime),
-          );
+          ) ?? params.modelOptions.find((option) => option.value === triggerModelValue));
   const modelToolsUnavailable = triggerModelOption?.supportsTools === false;
   const selectedContextWindowOption = params.contextWindow?.options.find(
     (option) => option.id === params.contextWindow?.selected,
