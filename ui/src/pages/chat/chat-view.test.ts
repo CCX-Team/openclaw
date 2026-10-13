@@ -3430,7 +3430,7 @@ describe("chat model controls", () => {
       displayName: "Google",
       status: "static",
       profiles: [{ profileId: "google:key", type: "api_key", status: "static" }],
-      apiKey: *** source: "env", envVar: "GEMINI_API_KEY" },
+      apiKey: { source: "env", envVar: "GEMINI_API_KEY" },
     },
     {
       provider: "google-gemini-cli",
